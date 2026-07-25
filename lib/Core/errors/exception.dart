@@ -1,10 +1,10 @@
 class CustomException implements Exception {
-  final String message;
+  final String errMessage;
 
-  CustomException({required this.message});
+  CustomException({required this.errMessage});
 
   @override
   String toString() {
-    return message;
+    return errMessage;
   }
 }

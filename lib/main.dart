@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:hossam_templete_for_apps/Core/Services/Prefs.dart';
 import 'package:hossam_templete_for_apps/Core/Services/service_locator.dart';
+import 'package:hossam_templete_for_apps/Core/constants/Endpoints.dart';
 import 'package:hossam_templete_for_apps/MyAPP.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() async{
-   WidgetsFlutterBinding.ensureInitialized();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  // await Hive.initFlutter();
- 
+  await Supabase.initialize(
+    url: EndPoints.supabase_BaseUrl,
+    anonKey: EndPoints.anonKey,
+  );
 
-
-  setupSL(); // Initialize the service locator before running the app
+  setupSL();
   await sl<Prefs>().init();
   runApp(const MyApp());
 }

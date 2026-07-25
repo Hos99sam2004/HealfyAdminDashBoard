@@ -1,10 +1,13 @@
-import 'dart:developer';
+// lib/Feature/SplashScreens/Splash.dart
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hossam_templete_for_apps/Core/responsive/responsive_layout.dart';
 import 'package:hossam_templete_for_apps/Core/Routes/Routes.dart';
 import 'package:hossam_templete_for_apps/Core/Services/Prefs.dart';
 import 'package:hossam_templete_for_apps/Core/Services/service_locator.dart';
+import 'package:hossam_templete_for_apps/theme/app_colors.dart';
+import 'package:hossam_templete_for_apps/Core/widgets/logo_widget.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,42 +16,45 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  @override
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _fadeAnim;
+
   @override
   void initState() {
     super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _fadeAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
+    _ctrl.forward();
 
-    Future.delayed(const Duration(seconds: 5), () {
+    Future.delayed(const Duration(seconds: 3), () {
       if (!mounted) return;
-      handleNavigation();
+      _handleNavigation();
     });
   }
 
-  void handleNavigation() {
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _handleNavigation() {
     final token = sl<Prefs>().getString("auth_token");
-    final userRole = sl<Prefs>().getString("user_role");
-    final teacherStatus = sl<Prefs>().getString("teacherStatus");
     final isShowOnboarding = sl<Prefs>().getBool("showOnboarding");
 
     if (!mounted) return;
 
-    log("Token: $token, User Role: $userRole, Teacher Status: $teacherStatus");
-
-    if (token != null && token.isNotEmpty) {
-      if (userRole == "Student") {
-        // context.go(Routes.studentHome);
-      } else if (userRole == "Teacher" && teacherStatus == "Approved") {
-        // context.pushReplacement(Routes.teacherHome);
-      } else {
-        // context.go(Routes.verifyTeacher);
-      }
+    if (isShowOnboarding != true) {
+      context.go(Routes.onboarding);
+    } else if (token == null) {
+      context.go(Routes.login);
     } else {
-      if (isShowOnboarding != true) {
-        context.go(Routes.onboarding);
-      } else {
-        context.go(Routes.login);
-      }
+      context.go(Routes.dashboard);
     }
   }
 
@@ -60,16 +66,91 @@ class _SplashScreenState extends State<SplashScreen> {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color.fromARGB(255, 42, 143, 245),
-              Color(0xFF89BDF0),
-              Color.fromARGB(255, 159, 189, 218),
-            ],
+            colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE), Color(0xFFBFDBFE)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
-        child: Center(child: Image.asset('assets/images/logo.png')),
+        child: FadeTransition(
+          opacity: _fadeAnim,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo
+              Container(
+                width: context.responsive(
+                  mobile: 80.0,
+                  tablet: 100.0,
+                  desktop: 120.0,
+                ),
+                height: context.responsive(
+                  mobile: 80.0,
+                  tablet: 100.0,
+                  desktop: 120.0,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.15),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Center(
+                    child: Logo(
+                      size: context.responsive(
+                        mobile: 56.0,
+                        tablet: 80.0,
+                        desktop: 96.0,
+                      ),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Healfy',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: context.responsive(
+                    mobile: 28.0,
+                    tablet: 34.0,
+                    desktop: 40.0,
+                  ),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Admin Dashboard',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: context.responsive(
+                    mobile: 13.0,
+                    tablet: 15.0,
+                    desktop: 16.0,
+                  ),
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 48),
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

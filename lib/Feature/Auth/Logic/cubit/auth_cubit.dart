@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:hossam_templete_for_apps/Feature/Auth/Logic/models/LoginRequestModel.dart';
 import 'package:hossam_templete_for_apps/Feature/Auth/Logic/models/LoginResponseModel.dart';
 import 'package:hossam_templete_for_apps/Feature/Auth/Logic/models/RegisterRequestModel.dart';
-import 'package:hossam_templete_for_apps/Feature/Auth/Logic/models/RegisterResponseModel.dart';
+// import 'package:hossam_templete_for_apps/Feature/Auth/Logic/models/RegisterResponseModel.dart';
 import 'package:hossam_templete_for_apps/Feature/Auth/Logic/repo/repo.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'auth_state.dart';
 
@@ -19,7 +20,8 @@ class AuthCubit extends Cubit<AuthState> {
   final GlobalKey<FormState> loginFormKey = GlobalKey<FormState>();
   final GlobalKey<FormState> registerFormKey = GlobalKey<FormState>();
   AutovalidateMode autovalidateMode = AutovalidateMode.disabled;
-  String selectedRole = "Student";
+  String selectedRole = "patient";
+  final supabase = Supabase.instance.client;
 
   void changeSelectedRole(String value) {
     selectedRole = value;
@@ -52,7 +54,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
       result.fold((failure) {
         emit(AuthRegisterFailure(errMessage: failure.errMessage));
-      }, (r) => emit(AuthRegisterSuccess(registerResponseModels: r)));
+      }, (r) => emit(AuthRegisterSuccess(loginResponseModels: r)));
     } catch (e) {
       emit(AuthRegisterFailure(errMessage: e.toString()));
     }
@@ -64,5 +66,4 @@ class AuthCubit extends Cubit<AuthState> {
         : AutovalidateMode.disabled;
     emit(AuthChangeValidateMode());
   }
-
 }

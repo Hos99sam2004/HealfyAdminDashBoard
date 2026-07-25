@@ -3,6 +3,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+// import 'package:go_router/go_router.dart';
+// import 'package:hossam_templete_for_apps/Core/Routes/Routes.dart';
 import 'package:hossam_templete_for_apps/Core/utils/CustomWidgets/SnakeBar.dart';
 import 'package:hossam_templete_for_apps/Core/utils/CustomWidgets/inputField.dart';
 import 'package:hossam_templete_for_apps/Feature/Auth/Logic/cubit/auth_cubit.dart';
@@ -16,15 +18,17 @@ class SignUpCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<AuthCubit>();
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16.r),
         gradient: LinearGradient(
           colors: [
-            const Color.fromARGB(255, 4, 0, 249).withOpacity(0.5),
-            const Color.fromARGB(255, 10, 215, 246).withOpacity(0.6),
-            const Color.fromARGB(255, 148, 24, 236).withOpacity(0.4),
+            colorScheme.primary.withOpacity(0.18),
+            colorScheme.secondaryContainer.withOpacity(0.65),
+            colorScheme.tertiaryContainer.withOpacity(0.35),
           ],
         ),
       ),
@@ -122,70 +126,61 @@ class SignUpCard extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 16.h),
-              FadeInLeft(
-                delay: Duration(milliseconds: 1900),
-                child: DropdownButtonFormField(
-                  initialValue: cubit.selectedRole,
-                  items: [
-                    DropdownMenuItem(
-                      value: "Student",
-                      child: Text(S.of(context).roleStudent),
-                    ),
-                    DropdownMenuItem(
-                      value: "Teacher",
-                      child: Text(S.of(context).roleTeacher),
-                    ),
-                  ],
-                  dropdownColor: Colors.indigo,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  focusColor: Colors.transparent,
-                  autofocus: true,
-                  onChanged: (value) {
-                    if (value != null) {
-                      cubit.changeSelectedRole(value);
-                    }
-                  },
-                  decoration: InputDecoration(
-                    hintText: S.of(context).selectRoleHint,
-                    prefixIcon: Icon(Icons.person_outline),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                  ),
-                ),
-              ),
+
+              // FadeInLeft(
+              //   delay: Duration(milliseconds: 1900),
+              //   child: DropdownButtonFormField(
+              //     initialValue: cubit.selectedRole,
+              //     items: [
+              //       DropdownMenuItem(
+              //         value: "admin",
+              //         child: Text(S.of(context).roleAdmin),
+              //       ),
+              //     ],
+              //     dropdownColor: colorScheme.surface,
+              //     style: TextStyle(
+              //       color: colorScheme.onSurface,
+              //       fontSize: 16.sp,
+              //       fontWeight: FontWeight.bold,
+              //     ),
+              //     focusColor: Colors.transparent,
+              //     autofocus: true,
+              //     onChanged: (value) {
+              //       if (value != null) {
+              //         cubit.changeSelectedRole(value);
+              //       }
+              //     },
+              //     decoration: InputDecoration(
+              //       hintText: S.of(context).selectRoleHint,
+              //       prefixIcon: Icon(Icons.person_outline),
+              //       border: OutlineInputBorder(
+              //         borderRadius: BorderRadius.circular(12.r),
+              //       ),
+              //     ),
+              //   ),
+              // ),
               SizedBox(height: 24.h),
               BlocConsumer<AuthCubit, AuthState>(
                 listener: (context, state) {
-                  if (state is AuthRegisterLoading) {
-                    CircularProgressIndicator();
-                  }
-
                   if (state is AuthRegisterFailure) {
                     showSnackBar(
                       context,
                       state.errMessage,
-                      color: Colors.red[400]!,
+                      color: colorScheme.error,
                     );
+                    print("state.errMessage");
                   }
-                  if (state is AuthRegisterSuccess) {
-                    final data = state.registerResponseModels;
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      snackBarAnimationStyle: AnimationStyle(
-                        curve: ElasticInOutCurve(),
-                        duration: const Duration(seconds: 2),
-                      ),
-                      SnackBar(
-                        content: Text(data.message.toString()),
-                        backgroundColor: Colors.green[400]!,
-                      ),
+                  if (state is AuthRegisterSuccess) {
+                    // Future.delayed(
+                    //   Duration(seconds: 1),
+                    // ).then((value) => context.go(Routes.));
+                    showSnackBar(
+                      context,
+                      S.of(context).signUpSuccessful,
+                      color: colorScheme.primary,
                     );
-                    Navigator.push(
+                    Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (context) => Login()),
                     );
@@ -204,7 +199,7 @@ class SignUpCard extends StatelessWidget {
                             email: cubit.emailController.text,
                             password: cubit.passwordController.text,
                             phone: cubit.phoneController.text,
-                            role: cubit.selectedRole,
+                            role: "admin",
                           ),
                         );
                       } else {
@@ -221,9 +216,8 @@ class SignUpCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12.r),
                           gradient: LinearGradient(
                             colors: [
-                              const Color(0xFF9418EC).withOpacity(0.4),
-                              // const Color(0xFF0AD7F6).withOpacity(0.6),
-                              const Color(0xFF0400F9).withOpacity(0.5),
+                              colorScheme.primary.withOpacity(0.8),
+                              colorScheme.secondary.withOpacity(0.9),
                             ],
                           ),
                         ),
@@ -231,7 +225,7 @@ class SignUpCard extends StatelessWidget {
                           S.of(context).createAccount,
                           style: TextStyle(
                             fontSize: 16.sp,
-                            color: Colors.white,
+                            color: colorScheme.onPrimary,
                           ),
                         ),
                       ),
@@ -245,13 +239,16 @@ class SignUpCard extends StatelessWidget {
                 child: Text.rich(
                   TextSpan(
                     text: S.of(context).alreadyHaveAccount + " ",
-                    style: TextStyle(fontSize: 14.sp, color: Colors.black),
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: colorScheme.onSurface,
+                    ),
                     children: [
                       TextSpan(
                         text: S.of(context).signIn,
                         style: TextStyle(
                           fontSize: 14.sp,
-                          color: Colors.white,
+                          color: colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                         recognizer: TapGestureRecognizer()

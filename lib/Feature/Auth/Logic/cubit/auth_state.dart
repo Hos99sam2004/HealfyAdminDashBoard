@@ -20,8 +20,8 @@ final class AuthLoginSuccess extends AuthState {
 }
 
 final class AuthRegisterSuccess extends AuthState {
-  final RegisterResponseModels registerResponseModels;
-  AuthRegisterSuccess({required this.registerResponseModels});
+  final LoginResponseModels loginResponseModels;
+  AuthRegisterSuccess({required this.loginResponseModels});
 }
 
 

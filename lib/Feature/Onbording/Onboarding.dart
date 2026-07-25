@@ -1,10 +1,14 @@
+// lib/Feature/Onbording/Onboarding.dart
+
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hossam_templete_for_apps/Core/responsive/responsive_layout.dart';
 import 'package:hossam_templete_for_apps/Core/Routes/Routes.dart';
 import 'package:hossam_templete_for_apps/Core/Services/Prefs.dart';
 import 'package:hossam_templete_for_apps/Core/Services/service_locator.dart';
-import 'package:hossam_templete_for_apps/generated/l10n.dart' show S;
+import 'package:hossam_templete_for_apps/generated/l10n.dart';
+import 'package:hossam_templete_for_apps/theme/app_colors.dart';
+import 'package:hossam_templete_for_apps/theme/app_spacing.dart';
 
 class Onboarding extends StatefulWidget {
   const Onboarding({super.key});
@@ -14,222 +18,270 @@ class Onboarding extends StatefulWidget {
 }
 
 class _OnboardingState extends State<Onboarding> {
-  final PageController controller = PageController();
-  int currentIndex = 0;
-  List<Map<String, String>> pages = [
-    {
-      "titleKey": "onboardingTitle1",
-      "descriptionKey": "onboardingDescription1",
-      "image": "assets/images/screen1.png",
+  final PageController _controller = PageController();
+  int _currentIndex = 0;
 
-      // "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTty_StL4s-czvLRnvjs-f4qazAS57qhtHf8oxwcva5waEL2jUko6RgNA_4LefXT_EvM9LMejqdeNJYGLCEXnTQhE0&s&ec=121532766",
+  final List<Map<String, String>> _pages = const [
+    {
+      'titleKey': 'onboardingTitle1',
+      'descriptionKey': 'onboardingDescription1',
+      'image': 'assets/images/onbo1.jpeg',
     },
-
     {
-      "titleKey": "onboardingTitle2",
-      "descriptionKey": "onboardingDescription2",
-      "image": "assets/images/screen2.png",
-      // "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTty_StL4s-czvLRnvjs-f4qazAS57qhtHf8oxwcva5waEL2jUko6RgNA_4LefXT_EvM9LMejqdeNJYGLCEXnTQhE0&s&ec=121532766",
+      'titleKey': 'onboardingTitle2',
+      'descriptionKey': 'onboardingDescription2',
+      'image': 'assets/images/onbo2.jpeg',
     },
-
     {
-      "titleKey": "onboardingTitle3",
-      "descriptionKey": "onboardingDescription3",
-      "image": "assets/images/screen3.png",
-      // "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTty_StL4s-czvLRnvjs-f4qazAS57qhtHf8oxwcva5waEL2jUko6RgNA_4LefXT_EvM9LMejqdeNJYGLCEXnTQhE0&s&ec=121532766",
+      'titleKey': 'onboardingTitle3',
+      'descriptionKey': 'onboardingDescription3',
+      'image': 'assets/images/onbo3.jpeg',
     },
   ];
 
+  Future<void> _finish() async {
+    await sl<Prefs>().setBool('showOnboarding', true);
+    if (!mounted) return;
+    context.go(Routes.login);
+  }
+
+  void _next() {
+    if (_currentIndex == _pages.length - 1) {
+      _finish();
+    } else {
+      _controller.nextPage(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDesktop = context.isDesktop;
+
     return Scaffold(
-      body: Container(
-        height: double.infinity,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.fromARGB(255, 42, 143, 245),
-              Color(0xFF89BDF0),
-              Color.fromARGB(255, 159, 189, 218),
-            ],
-          ),
-        ),
-        child: Padding(
-          padding: EdgeInsets.only(top: 16.h),
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: TextButton(
-                  onPressed: () {
-                    controller.jumpToPage(pages.length - 1);
-                  },
-                  child: Text(
-                    S.of(context).skip,
-                    style: TextStyle(
-                      color: Colors.indigo[900],
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.sp,
+      backgroundColor: const Color(0xFFF0F4FF),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
+              children: [
+                // ── Skip button ───────────────────────────────────────────
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      right: AppSpacing.pagePaddingH(context),
+                      top: AppSpacing.sm,
+                    ),
+                    child: TextButton(
+                      onPressed: () => _controller.animateToPage(
+                        _pages.length - 1,
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOut,
+                      ),
+                      child: Text(
+                        S.of(context).skip,
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              Expanded(
-                child: PageView.builder(
-                  controller: controller,
-                  itemCount: pages.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      currentIndex = index;
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    final title = index == 0
-                        ? S.of(context).onboardingTitle1
-                        : index == 1
-                        ? S.of(context).onboardingTitle2
-                        : S.of(context).onboardingTitle3;
-                    final description = index == 0
-                        ? S.of(context).onboardingDescription1
-                        : index == 1
-                        ? S.of(context).onboardingDescription2
-                        : S.of(context).onboardingDescription3;
-                    return Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24.w),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 5,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16.r),
-                              clipBehavior: Clip.antiAlias,
-                              child: Image.asset(
-                                pages[index]["image"]!,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
+                // ── PageView ──────────────────────────────────────────────
+                Expanded(
+                  child: PageView.builder(
+                    controller: _controller,
+                    itemCount: _pages.length,
+                    onPageChanged: (i) => setState(() => _currentIndex = i),
+                    itemBuilder: (ctx, index) {
+                      final titles = [
+                        S.of(context).onboardingTitle1,
+                        S.of(context).onboardingTitle2,
+                        S.of(context).onboardingTitle3,
+                      ];
+                      final descs = [
+                        S.of(context).onboardingDescription1,
+                        S.of(context).onboardingDescription2,
+                        S.of(context).onboardingDescription3,
+                      ];
+
+                      return Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.pagePaddingH(context),
+                        ),
+                        child: isDesktop
+                            ? _DesktopPage(
+                                image: _pages[index]['image']!,
+                                title: titles[index],
+                                description: descs[index],
+                              )
+                            : _MobilePage(
+                                image: _pages[index]['image']!,
+                                title: titles[index],
+                                description: descs[index],
                               ),
-                            ),
-                          ),
+                      );
+                    },
+                  ),
+                ),
 
-                          SizedBox(height: 20.h),
-
-                          Text(
-                            title,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: title.length > 20 ? 19.sp : 22.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.indigo,
-                            ),
-                          ),
-
-                          SizedBox(height: 20.h),
-
-                          Text(
-                            description,
-                            textAlign: TextAlign.start,
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              color: Colors.grey[200],
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
+                // ── Dots ──────────────────────────────────────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_pages.length, (i) {
+                    final active = _currentIndex == i;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      height: 8,
+                      width: active ? 28 : 8,
+                      decoration: BoxDecoration(
+                        color: active
+                            ? AppColors.primary
+                            : AppColors.primary.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     );
-                  },
+                  }),
                 ),
-              ),
 
-              SizedBox(height: 30.h),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  pages.length,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    height: 8.h,
-                    width: currentIndex == index ? 30 : 8,
-                    decoration: BoxDecoration(
-                      color: currentIndex == index
-                          ? Colors.indigo
-                          : const Color.fromARGB(
-                              255,
-                              5,
-                              173,
-                              224,
-                            ).withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                // ── Next / Get Started ────────────────────────────────────
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.pagePaddingH(context),
+                    vertical: AppSpacing.lg,
                   ),
-                ),
-              ),
-
-              SizedBox(height: 30.h),
-
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24.w),
-                child: GestureDetector(
-                  onTap: () async {
-                    if (currentIndex == pages.length - 1) {
-                      await sl<Prefs>().setBool("showOnboarding", true);
-                      print(
-                        "showOnbording ====================================== ${sl<Prefs>().getBool("showOnboarding")}",
-                      );
-                      context.go(Routes.login);
-                    } else {
-                      controller.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    }
-                  },
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 300.w),
-                      child: Container(
-                        height: 48.h,
+                      constraints: BoxConstraints(
+                        maxWidth:
+                            context.responsive(mobile: double.infinity, tablet: 360.0, desktop: 400.0),
+                      ),
+                      child: SizedBox(
+                        height: 48,
                         width: double.infinity,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFF0400F9).withOpacity(0.5),
-                              const Color(0xFF0AD7F6).withOpacity(0.6),
-                              const Color(0xFF9418EC).withOpacity(0.4),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                        child: ElevatedButton(
+                          onPressed: _next,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
                           ),
-                          borderRadius: BorderRadius.circular(30.r),
-                        ),
-                        child: Text(
-                          currentIndex == pages.length - 1
-                              ? S.of(context).onboardingGetStarted
-                              : S.of(context).onboardingNext,
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                          child: Text(
+                            _currentIndex == _pages.length - 1
+                                ? S.of(context).onboardingGetStarted
+                                : S.of(context).onboardingNext,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
 
-              SizedBox(height: 30.h),
+// ── Desktop layout: side-by-side ─────────────────────────────────────────────
+class _DesktopPage extends StatelessWidget {
+  final String image;
+  final String title;
+  final String description;
+  const _DesktopPage({required this.image, required this.title, required this.description});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.asset(image, fit: BoxFit.cover, height: double.infinity),
+          ),
+        ),
+        const SizedBox(width: 48),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+              ),
             ],
           ),
         ),
-      ),
+      ],
+    );
+  }
+}
+
+// ── Mobile / Tablet layout: stacked ──────────────────────────────────────────
+class _MobilePage extends StatelessWidget {
+  final String image;
+  final String title;
+  final String description;
+  const _MobilePage({required this.image, required this.title, required this.description});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          flex: 5,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.asset(image, width: double.infinity, fit: BoxFit.cover),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          description,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }
