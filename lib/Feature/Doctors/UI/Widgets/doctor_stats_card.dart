@@ -51,6 +51,14 @@ class DoctorStatsCard extends StatelessWidget {
               accentColor: AppColors.secondary,
             ),
           ),
+          SizedBox(
+            width: 220,
+            child: _StatItem(
+              label: 'Rejected Doctors',
+              value: statistics.rejectedDoctors.toString(),
+              accentColor: AppColors.error,
+            ),
+          ),
         ],
       ),
     );
@@ -70,29 +78,27 @@ class _StatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: accentColor,
-            ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: accentColor,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

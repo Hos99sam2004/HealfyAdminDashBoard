@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hossam_templete_for_apps/Core/Services/service_locator.dart';
 import 'package:hossam_templete_for_apps/Core/widgets/custom_search_bar.dart';
+import 'package:hossam_templete_for_apps/Feature/Search/Logic/cubit/patient_search_cubit.dart';
+import 'package:hossam_templete_for_apps/Feature/Search/UI/Screens/PatientSearchScreen.dart';
 import 'package:hossam_templete_for_apps/theme/app_colors.dart';
 import 'package:hossam_templete_for_apps/theme/app_spacing.dart';
 import 'package:hossam_templete_for_apps/Core/responsive/responsive_extensions.dart';
@@ -73,7 +77,17 @@ class CustomTopBar extends StatelessWidget implements PreferredSizeWidget {
             const SizedBox(width: AppSpacing.lg),
             if (!isDesktop) Expanded(child: CustomSearchBar()),
             if (isDesktop) ...[
-              Expanded(child: CustomSearchBar()),
+              Expanded(
+                child: CustomSearchBar(
+                  hintText: 'Search for anything',
+                  onChanged: (value) {
+                    print(value);
+                  },
+                  onTapSearch: () {
+                    print("Ontapsearch");
+                  },
+                ),
+              ),
               const SizedBox(width: AppSpacing.lg),
               const _ActionsRow(),
             ],
@@ -95,7 +109,21 @@ class _ActionsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _BadgeIcon(icon: Icons.search, label: 'Search'),
+        _BadgeIcon(
+          icon: Icons.search,
+          label: 'Search',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BlocProvider(
+                  create: (context) => sl<PatientSearchCubit>(),
+                  child: PatientSearchScreen(),
+                ),
+              ),
+            );
+          },
+        ),
         const SizedBox(width: AppSpacing.md),
         _BadgeIcon(icon: Icons.notifications_none, label: 'Notifications'),
         const SizedBox(width: AppSpacing.md),
@@ -136,8 +164,8 @@ class _ActionsRow extends StatelessWidget {
 class _BadgeIcon extends StatelessWidget {
   final IconData icon;
   final String label;
-
-  const _BadgeIcon({required this.icon, required this.label});
+  void Function()? onPressed;
+  _BadgeIcon({required this.icon, required this.label, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -151,8 +179,70 @@ class _BadgeIcon extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.textSecondary.withOpacity(0.16)),
         ),
-        child: Icon(icon, color: AppColors.textPrimary, size: 22),
+        child: IconButton(
+          icon: Icon(icon, color: AppColors.textPrimary, size: 22),
+          onPressed: onPressed,
+        ),
       ),
+    );
+  }
+}
+
+//==============================================================================
+
+class DoctorsSearchDelegate extends SearchDelegate<String> {
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+        },
+      ),
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () {
+        close(context, '');
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    // عرض نتائج البحث
+    return Center(child: Text('نتائج البحث عن: $query'));
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    // عرض اقتراحات البحث
+    final List<String> doctors = [
+      'Hossam9',
+      'Ahmed',
+      'Mohamed',
+      // أضف باقي الأطباء
+    ];
+
+    final suggestions = doctors.where(
+      (doctor) => doctor.toLowerCase().contains(query.toLowerCase()),
+    );
+
+    return ListView.builder(
+      itemCount: suggestions.length,
+      itemBuilder: (context, index) {
+        return ListTile(
+          title: Text(suggestions.elementAt(index)),
+          onTap: () {
+            // التنقل لصفحة تفاصيل الطبيب
+          },
+        );
+      },
     );
   }
 }

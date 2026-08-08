@@ -4,6 +4,26 @@ sealed class DoctorsState {}
 
 final class DoctorsInitial extends DoctorsState {}
 
+final class BulkApprovedLoading extends DoctorsState {}
+
+final class BulkApprovedError extends DoctorsState {
+  final String message;
+
+  BulkApprovedError({required this.message});
+}
+
+final class BulkApprovedSuccess extends DoctorsState {}
+
+final class BulkRejectedLoading extends DoctorsState {}
+
+final class BulkRejectedError extends DoctorsState {
+  final String message;
+
+  BulkRejectedError({required this.message});
+}
+
+final class BulkRejectedSuccess extends DoctorsState {}
+
 final class DoctorsLoading extends DoctorsState {}
 
 final class DoctorsLoaded extends DoctorsState {

@@ -9,6 +9,9 @@ import 'package:hossam_templete_for_apps/Feature/Dashboard/Logic/repo/repoimplem
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/cubit/doctors_cubit.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/repo/repo.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/repo/repoimplementation.dart';
+import 'package:hossam_templete_for_apps/Feature/Search/Logic/cubit/patient_search_cubit.dart';
+import 'package:hossam_templete_for_apps/Feature/Search/Logic/repo/search_repo.dart';
+import 'package:hossam_templete_for_apps/Feature/Search/Logic/repo/search_repo_implementation.dart';
 import 'package:hossam_templete_for_apps/Feature/cubit/main_cubit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -29,10 +32,14 @@ void setupSL() {
   sl.registerLazySingleton<DoctorRepo>(
     () => DoctorRepoImplementation(supabase: sl<SupabaseClient>()),
   );
+  sl.registerLazySingleton<SearchRepo>(
+    () => SearchRepoImplementation(supabase: sl<SupabaseClient>()),
+  );
 
   // Cubits / Blocs (متحكمات الحالة)
   sl.registerFactory(() => AuthCubit(sl<Repo>()));
   sl.registerFactory(() => DashboardCubit(sl<DashboardRepo>()));
   sl.registerFactory(() => DoctorsCubit(sl<DoctorRepo>()));
+  sl.registerFactory(() => PatientSearchCubit(sl<SearchRepo>()));
   sl.registerLazySingleton<MainCubit>(() => MainCubit());
 }

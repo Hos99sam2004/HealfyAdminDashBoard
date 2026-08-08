@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:hossam_templete_for_apps/Core/responsive/responsive_extensions.dart';
+import 'package:hossam_templete_for_apps/Feature/Search/UI/Screens/PatientSearchScreen.dart';
 import 'package:hossam_templete_for_apps/theme/app_colors.dart';
 import 'package:hossam_templete_for_apps/theme/app_spacing.dart';
 
@@ -30,7 +31,11 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
         'Healfy Admin',
         style: TextStyle(
           color: AppColors.textPrimary,
-          fontSize: context.responsive(mobile: 16.0, tablet: 17.0, desktop: 18.0),
+          fontSize: context.responsive(
+            mobile: 16.0,
+            tablet: 17.0,
+            desktop: 18.0,
+          ),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -42,7 +47,10 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         // Notifications
         IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: AppColors.textSecondary),
+          icon: const Icon(
+            Icons.notifications_outlined,
+            color: AppColors.textSecondary,
+          ),
           onPressed: () {},
         ),
         // Avatar

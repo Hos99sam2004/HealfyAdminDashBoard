@@ -36,6 +36,7 @@ class _DoctorsBodyState extends State<DoctorsBody> {
             state is DoctorsDetailLoading ||
             state is DoctorsDetailError) {
           DoctorsOverviewModel overview;
+
           DoctorDetailsModel? selectedDoctor;
 
           if (state is DoctorsLoaded) {
@@ -51,19 +52,28 @@ class _DoctorsBodyState extends State<DoctorsBody> {
 
           return SingleChildScrollView(
             padding: AppSpacing.pagePadding(context),
+
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
+
               children: [
                 const SizedBox(height: AppSpacing.xl),
+
                 DoctorStatsCard(statistics: overview.statistics),
+
                 const SizedBox(height: AppSpacing.xl),
+
                 DoctorListCard(
                   doctors: overview.doctors,
+
                   selectedDoctorId: selectedDoctor?.id,
+
                   onDoctorSelected: (id) =>
                       context.read<DoctorsCubit>().loadDoctorDetails(id),
                 ),
+
                 const SizedBox(height: AppSpacing.xl),
+
                 if (selectedDoctor != null)
                   DoctorDetailCard(doctor: selectedDoctor),
               ],
