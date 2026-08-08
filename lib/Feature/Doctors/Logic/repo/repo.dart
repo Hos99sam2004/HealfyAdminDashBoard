@@ -5,7 +5,6 @@ import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/models/doctor_det
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/models/doctor_document_model.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/models/doctor_revenue_model.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/models/doctor_review_model.dart';
-import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/models/doctor_verification_model.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/models/doctors_overview_model.dart';
 
 abstract class DoctorRepo {
@@ -31,14 +30,7 @@ abstract class DoctorRepo {
   Future<Either<CustomException, List<DoctorDocumentModel>>> getDoctorDocuments(
     String id,
   );
-  Future<Either<CustomException, DoctorVerificationModel>> verifyDoctor(
-    String id, {
-    required String status,
-    String? reason,
-    String? verifiedBy,
-  });
 
   Future<Either<CustomException, bool>> bulkApprove(String id);
   Future<Either<CustomException, bool>> bulkReject(String id, String? reason);
-  Future<Either<CustomException, bool>> bulkActivate(List<String> ids);
 }

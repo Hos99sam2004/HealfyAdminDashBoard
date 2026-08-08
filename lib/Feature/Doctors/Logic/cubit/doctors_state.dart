@@ -4,25 +4,57 @@ sealed class DoctorsState {}
 
 final class DoctorsInitial extends DoctorsState {}
 
-final class BulkApprovedLoading extends DoctorsState {}
+final class BulkApprovedLoading extends DoctorsState {
+  final DoctorsOverviewModel overview;
+  final DoctorDetailsModel? selectedDoctor;
+
+  BulkApprovedLoading({required this.overview, this.selectedDoctor});
+}
 
 final class BulkApprovedError extends DoctorsState {
   final String message;
+  final DoctorsOverviewModel overview;
+  final DoctorDetailsModel? selectedDoctor;
 
-  BulkApprovedError({required this.message});
+  BulkApprovedError({
+    required this.message,
+    required this.overview,
+    this.selectedDoctor,
+  });
 }
 
-final class BulkApprovedSuccess extends DoctorsState {}
+final class BulkApprovedSuccess extends DoctorsState {
+  final DoctorsOverviewModel overview;
+  final DoctorDetailsModel? selectedDoctor;
 
-final class BulkRejectedLoading extends DoctorsState {}
+  BulkApprovedSuccess({required this.overview, this.selectedDoctor});
+}
+
+final class BulkRejectedLoading extends DoctorsState {
+  final DoctorsOverviewModel overview;
+  final DoctorDetailsModel? selectedDoctor;
+
+  BulkRejectedLoading({required this.overview, this.selectedDoctor});
+}
 
 final class BulkRejectedError extends DoctorsState {
   final String message;
+  final DoctorsOverviewModel overview;
+  final DoctorDetailsModel? selectedDoctor;
 
-  BulkRejectedError({required this.message});
+  BulkRejectedError({
+    required this.message,
+    required this.overview,
+    this.selectedDoctor,
+  });
 }
 
-final class BulkRejectedSuccess extends DoctorsState {}
+final class BulkRejectedSuccess extends DoctorsState {
+  final DoctorsOverviewModel overview;
+  final DoctorDetailsModel? selectedDoctor;
+
+  BulkRejectedSuccess({required this.overview, this.selectedDoctor});
+}
 
 final class DoctorsLoading extends DoctorsState {}
 
