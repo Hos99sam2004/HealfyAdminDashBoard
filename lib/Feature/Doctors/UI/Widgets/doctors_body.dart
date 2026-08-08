@@ -27,10 +27,14 @@ class _DoctorsBodyState extends State<DoctorsBody> {
   Widget build(BuildContext context) {
     return BlocConsumer<DoctorsCubit, DoctorsState>(
       listener: (context, state) {
-        if (state is BulkApprovedError || state is BulkRejectedError) {
+        if (state is BulkApprovedError ||
+            state is BulkRejectedError ||
+            state is DoctorStatusChangeError) {
           final message = state is BulkApprovedError
               ? state.message
-              : (state as BulkRejectedError).message;
+              : state is BulkRejectedError
+                  ? state.message
+                  : (state as DoctorStatusChangeError).message;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(message)),
           );
@@ -80,6 +84,16 @@ class _DoctorsBodyState extends State<DoctorsBody> {
         } else if (state is BulkRejectedSuccess) {
           overview = state.overview;
           selectedDoctor = state.selectedDoctor;
+        } else if (state is DoctorStatusChangeLoading) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
+          isActionLoading = true;
+        } else if (state is DoctorStatusChangeError) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
+        } else if (state is DoctorStatusChangeSuccess) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
         }
 
         if (overview == null) return const SizedBox.shrink();
@@ -103,6 +117,11 @@ class _DoctorsBodyState extends State<DoctorsBody> {
                   const SizedBox(height: AppSpacing.xl),
                   if (selectedDoctor != null) ...[
                     DoctorDetailCard(doctor: selectedDoctor!),
+                    const SizedBox(height: AppSpacing.md),
+                    _DoctorStatusActions(
+                      doctor: selectedDoctor!,
+                      isLoading: isActionLoading,
+                    ),
                     if (selectedDoctor!.status?.toLowerCase() == 'pending') ...[
                       const SizedBox(height: AppSpacing.md),
                       _DoctorVerificationActions(
@@ -126,6 +145,168 @@ class _DoctorsBodyState extends State<DoctorsBody> {
       },
     );
   }
+}
+
+class _DoctorStatusActions extends StatelessWidget {
+  final DoctorDetailsModel doctor;
+  final bool isLoading;
+
+  const _DoctorStatusActions({required this.doctor, required this.isLoading});
+
+  Future<void> _showChangeStatusDialog(BuildContext context) async {
+    var selectedStatus = doctor.status?.toLowerCase() ?? 'pending';
+    final reasonController = TextEditingController(
+      text: doctor.status?.toLowerCase() == 'rejected'
+          ? doctor.verificationReason ?? ''
+          : '',
+    );
+
+    final result = await showDialog<_StatusChangeResult>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final needsReason = selectedStatus == 'rejected';
+            return AlertDialog(
+              title: const Text('Change Doctor Status'),
+              content: SizedBox(
+                width: 420,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedStatus,
+                      decoration: const InputDecoration(
+                        labelText: 'Status',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'pending',
+                          child: Text('Pending'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'approved',
+                          child: Text('Approved'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'rejected',
+                          child: Text('Rejected'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => selectedStatus = value);
+                        }
+                      },
+                    ),
+                    if (needsReason) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      TextField(
+                        controller: reasonController,
+                        maxLines: 4,
+                        decoration: const InputDecoration(
+                          labelText: 'Rejection reason',
+                          hintText: 'Enter the reason for rejection',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final reason = reasonController.text.trim();
+                    if (needsReason && reason.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a rejection reason.'),
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.of(dialogContext).pop(
+                      _StatusChangeResult(
+                        status: selectedStatus,
+                        reason: needsReason ? reason : null,
+                      ),
+                    );
+                  },
+                  child: const Text('Save Status'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    reasonController.dispose();
+
+    if (!context.mounted || result == null) return;
+
+    await context.read<DoctorsCubit>().changeDoctorStatus(
+          doctorId: doctor.id,
+          status: result.status,
+          reason: result.reason,
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: AppSpacing.cardPadding(context),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.textSecondary.withOpacity(0.08),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.manage_accounts_outlined),
+          const SizedBox(width: AppSpacing.sm),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Doctor Status',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Change the doctor verification status.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: isLoading
+                ? null
+                : () => _showChangeStatusDialog(context),
+            icon: const Icon(Icons.edit_outlined),
+            label: const Text('Change Status'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusChangeResult {
+  final String status;
+  final String? reason;
+
+  const _StatusChangeResult({required this.status, this.reason});
 }
 
 class _DoctorVerificationActions extends StatelessWidget {
