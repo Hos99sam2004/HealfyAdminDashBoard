@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:bloc/bloc.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/models/doctor_details_model.dart';
+import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/models/doctor_model.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/models/doctors_overview_model.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/repo/repo.dart';
 
@@ -54,30 +55,31 @@ class DoctorsCubit extends Cubit<DoctorsState> {
       },
       (overview) async {
         if (overview.doctors.isEmpty) {
-          if (!isClosed) {
-            emit(DoctorsLoaded(overview: overview));
-          }
+          emit(DoctorsLoaded(overview: overview));
           return;
         }
 
-        final requestedId = selectedDoctorId;
-        final selected = overview.doctors.cast<dynamic>().firstWhere(
-          (doctor) => doctor.id == requestedId,
-          orElse: () => null,
-        );
+        DoctorModel? selected;
+        if (selectedDoctorId != null) {
+          for (final doctor in overview.doctors) {
+            if (doctor.id == selectedDoctorId) {
+              selected = doctor;
+              break;
+            }
+          }
+        }
+
         final doctorId = selected?.id ?? overview.doctors.first.id;
         final detailsResult = await repo.fetchDoctorDetails(doctorId);
-
         if (isClosed) return;
 
         detailsResult.fold(
           (failure) {
             log('Failed to fetch doctor details: ${failure.errMessage}');
-            final fallback = selected ?? overview.doctors.first;
             emit(
               DoctorsLoaded(
                 overview: overview,
-                selectedDoctor: fallback.toDetails(),
+                selectedDoctor: (selected ?? overview.doctors.first).toDetails(),
               ),
             );
           },
@@ -125,15 +127,13 @@ class DoctorsCubit extends Cubit<DoctorsState> {
     if (overview == null) return;
 
     _actionInProgress = true;
-    emit(
-      BulkApprovedLoading(
-        overview: overview,
-        selectedDoctor: selected,
-      ),
-    );
+    emit(BulkApprovedLoading(overview: overview, selectedDoctor: selected));
 
     final response = await repo.bulkApprove(doctorId);
-    if (isClosed) return;
+    if (isClosed) {
+      _actionInProgress = false;
+      return;
+    }
 
     await response.fold(
       (failure) async {
@@ -146,12 +146,7 @@ class DoctorsCubit extends Cubit<DoctorsState> {
         );
       },
       (_) async {
-        emit(
-          BulkApprovedSuccess(
-            overview: overview,
-            selectedDoctor: selected,
-          ),
-        );
+        emit(BulkApprovedSuccess(overview: overview, selectedDoctor: selected));
         await _refreshKeepingSelection(doctorId);
       },
     );
@@ -169,15 +164,13 @@ class DoctorsCubit extends Cubit<DoctorsState> {
     if (overview == null) return;
 
     _actionInProgress = true;
-    emit(
-      BulkRejectedLoading(
-        overview: overview,
-        selectedDoctor: selected,
-      ),
-    );
+    emit(BulkRejectedLoading(overview: overview, selectedDoctor: selected));
 
     final response = await repo.bulkReject(doctorId, reason);
-    if (isClosed) return;
+    if (isClosed) {
+      _actionInProgress = false;
+      return;
+    }
 
     await response.fold(
       (failure) async {
@@ -190,12 +183,7 @@ class DoctorsCubit extends Cubit<DoctorsState> {
         );
       },
       (_) async {
-        emit(
-          BulkRejectedSuccess(
-            overview: overview,
-            selectedDoctor: selected,
-          ),
-        );
+        emit(BulkRejectedSuccess(overview: overview, selectedDoctor: selected));
         await _refreshKeepingSelection(doctorId);
       },
     );
