@@ -56,6 +56,32 @@ final class BulkRejectedSuccess extends DoctorsState {
   BulkRejectedSuccess({required this.overview, this.selectedDoctor});
 }
 
+final class DoctorStatusChangeLoading extends DoctorsState {
+  final DoctorsOverviewModel overview;
+  final DoctorDetailsModel? selectedDoctor;
+
+  DoctorStatusChangeLoading({required this.overview, this.selectedDoctor});
+}
+
+final class DoctorStatusChangeError extends DoctorsState {
+  final String message;
+  final DoctorsOverviewModel overview;
+  final DoctorDetailsModel? selectedDoctor;
+
+  DoctorStatusChangeError({
+    required this.message,
+    required this.overview,
+    this.selectedDoctor,
+  });
+}
+
+final class DoctorStatusChangeSuccess extends DoctorsState {
+  final DoctorsOverviewModel overview;
+  final DoctorDetailsModel? selectedDoctor;
+
+  DoctorStatusChangeSuccess({required this.overview, this.selectedDoctor});
+}
+
 final class DoctorsLoading extends DoctorsState {}
 
 final class DoctorsLoaded extends DoctorsState {

@@ -33,4 +33,9 @@ abstract class DoctorRepo {
 
   Future<Either<CustomException, bool>> bulkApprove(String id);
   Future<Either<CustomException, bool>> bulkReject(String id, String? reason);
+  Future<Either<CustomException, bool>> changeDoctorStatus(
+    String id,
+    String status, {
+    String? reason,
+  });
 }

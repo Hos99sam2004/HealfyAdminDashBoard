@@ -25,6 +25,9 @@ class DoctorsCubit extends Cubit<DoctorsState> {
     if (current is BulkRejectedLoading) return current.overview;
     if (current is BulkRejectedError) return current.overview;
     if (current is BulkRejectedSuccess) return current.overview;
+    if (current is DoctorStatusChangeLoading) return current.overview;
+    if (current is DoctorStatusChangeError) return current.overview;
+    if (current is DoctorStatusChangeSuccess) return current.overview;
     return null;
   }
 
@@ -39,6 +42,9 @@ class DoctorsCubit extends Cubit<DoctorsState> {
     if (current is BulkRejectedLoading) return current.selectedDoctor;
     if (current is BulkRejectedError) return current.selectedDoctor;
     if (current is BulkRejectedSuccess) return current.selectedDoctor;
+    if (current is DoctorStatusChangeLoading) return current.selectedDoctor;
+    if (current is DoctorStatusChangeError) return current.selectedDoctor;
+    if (current is DoctorStatusChangeSuccess) return current.selectedDoctor;
     return null;
   }
 
@@ -184,6 +190,61 @@ class DoctorsCubit extends Cubit<DoctorsState> {
       },
       (_) async {
         emit(BulkRejectedSuccess(overview: overview, selectedDoctor: selected));
+        await _refreshKeepingSelection(doctorId);
+      },
+    );
+
+    _actionInProgress = false;
+  }
+
+  Future<void> changeDoctorStatus({
+    required String doctorId,
+    required String status,
+    String? reason,
+  }) async {
+    if (_actionInProgress || isClosed) return;
+    const validStatuses = {'pending', 'approved', 'rejected'};
+    if (!validStatuses.contains(status)) return;
+
+    final overview = _currentOverview();
+    final selected = _currentSelected();
+    if (overview == null) return;
+
+    _actionInProgress = true;
+    emit(
+      DoctorStatusChangeLoading(
+        overview: overview,
+        selectedDoctor: selected,
+      ),
+    );
+
+    final response = await repo.changeDoctorStatus(
+      doctorId,
+      status,
+      reason: reason,
+    );
+    if (isClosed) {
+      _actionInProgress = false;
+      return;
+    }
+
+    await response.fold(
+      (failure) async {
+        emit(
+          DoctorStatusChangeError(
+            message: failure.errMessage,
+            overview: overview,
+            selectedDoctor: selected,
+          ),
+        );
+      },
+      (_) async {
+        emit(
+          DoctorStatusChangeSuccess(
+            overview: overview,
+            selectedDoctor: selected,
+          ),
+        );
         await _refreshKeepingSelection(doctorId);
       },
     );

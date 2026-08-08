@@ -310,22 +310,7 @@ class DoctorRepoImplementation implements DoctorRepo {
 
   @override
   Future<Either<CustomException, bool>> bulkApprove(String doctorId) async {
-    try {
-      final response = await supabase
-          .from('doctors')
-          .update({'status': 'approved'})
-          .eq('id', doctorId)
-          .select('id, status');
-
-      if (response.isEmpty) {
-        return Left(CustomException(errMessage: 'No doctor was updated.'));
-      }
-
-      return const Right(true);
-    } catch (e) {
-      log('Error approving doctor: $e');
-      return Left(CustomException(errMessage: e.toString()));
-    }
+    return changeDoctorStatus(doctorId, 'approved');
   }
 
   @override
@@ -333,16 +318,32 @@ class DoctorRepoImplementation implements DoctorRepo {
     String doctorId,
     String? reason,
   ) async {
+    return changeDoctorStatus(doctorId, 'rejected', reason: reason);
+  }
+
+  @override
+  Future<Either<CustomException, bool>> changeDoctorStatus(
+    String doctorId,
+    String status, {
+    String? reason,
+  }) async {
+    const validStatuses = {'pending', 'approved', 'rejected'};
+    if (!validStatuses.contains(status)) {
+      return Left(CustomException(errMessage: 'Invalid doctor status.'));
+    }
+
     try {
+      final update = <String, dynamic>{'status': status};
+      if (status == 'rejected') {
+        update['rejected_reason'] =
+            reason == null || reason.trim().isEmpty
+                ? 'Rejected By Admin'
+                : reason.trim();
+      }
+
       final response = await supabase
           .from('doctors')
-          .update({
-            'status': 'rejected',
-            'rejected_reason':
-                reason == null || reason.trim().isEmpty
-                    ? 'Rejected By Admin'
-                    : reason.trim(),
-          })
+          .update(update)
           .eq('id', doctorId)
           .select('id, status, rejected_reason');
 
@@ -352,7 +353,7 @@ class DoctorRepoImplementation implements DoctorRepo {
 
       return const Right(true);
     } catch (e) {
-      log('Error rejecting doctor: $e');
+      log('Error changing doctor status: $e');
       return Left(CustomException(errMessage: e.toString()));
     }
   }

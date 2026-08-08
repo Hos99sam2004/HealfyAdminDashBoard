@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/cubit/doctors_cubit.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/models/doctor_details_model.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/UI/Widgets/doctor_documents_section.dart';
 import 'package:hossam_templete_for_apps/theme/app_colors.dart';
@@ -118,6 +120,8 @@ class DoctorDetailCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: AppSpacing.md),
+          _AdminStatusActions(doctor: doctor),
           const SizedBox(height: AppSpacing.lg),
           _ResponsiveDetailWrap(
             children: [
@@ -217,6 +221,143 @@ class DoctorDetailCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _AdminStatusActions extends StatelessWidget {
+  final DoctorDetailsModel doctor;
+
+  const _AdminStatusActions({required this.doctor});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<DoctorsCubit, DoctorsState>(
+      listener: (context, state) {
+        if (state is DoctorStatusChangeError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message)),
+          );
+        }
+        if (state is DoctorStatusChangeSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Doctor status updated successfully.')),
+          );
+          Navigator.of(context).pop();
+        }
+      },
+      builder: (context, state) {
+        final loading = state is DoctorStatusChangeLoading;
+
+        return Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            OutlinedButton.icon(
+              onPressed: loading
+                  ? null
+                  : () => _showChangeStatusDialog(context),
+              icon: loading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.swap_horiz),
+              label: const Text('Change Status'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showChangeStatusDialog(BuildContext context) async {
+    final cubit = context.read<DoctorsCubit>();
+    var selectedStatus = doctor.status?.toLowerCase() ?? 'pending';
+    final reasonController = TextEditingController(
+      text: doctor.status?.toLowerCase() == 'rejected'
+          ? doctor.verificationReason ?? ''
+          : '',
+    );
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final isRejected = selectedStatus == 'rejected';
+
+            return AlertDialog(
+              title: const Text('Change Doctor Status'),
+              content: SizedBox(
+                width: 420,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Select the new status for this doctor.'),
+                    const SizedBox(height: AppSpacing.md),
+                    DropdownButtonFormField<String>(
+                      value: selectedStatus,
+                      decoration: const InputDecoration(labelText: 'Status'),
+                      items: const [
+                        DropdownMenuItem(value: 'pending', child: Text('Pending')),
+                        DropdownMenuItem(value: 'approved', child: Text('Approved')),
+                        DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => selectedStatus = value);
+                        }
+                      },
+                    ),
+                    if (isRejected) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      TextField(
+                        controller: reasonController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Rejection Reason',
+                          hintText: 'Enter the reason for rejection',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (isRejected && reasonController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Rejection reason is required.'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    Navigator.of(dialogContext).pop();
+                    cubit.changeDoctorStatus(
+                      doctorId: doctor.id,
+                      status: selectedStatus,
+                      reason: isRejected ? reasonController.text.trim() : null,
+                    );
+                  },
+                  child: const Text('Save Status'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    reasonController.dispose();
   }
 }
 
