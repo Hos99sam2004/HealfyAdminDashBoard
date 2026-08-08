@@ -24,64 +24,96 @@ class _DoctorsBodyState extends State<DoctorsBody> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DoctorsCubit, DoctorsState>(
+    return BlocConsumer<DoctorsCubit, DoctorsState>(
+      listener: (context, state) {
+        if (state is BulkApprovedError || state is BulkRejectedError) {
+          final message = state is BulkApprovedError
+              ? state.message
+              : (state as BulkRejectedError).message;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message)),
+          );
+        }
+      },
       builder: (context, state) {
-        if (state is DoctorsLoading) {
+        if (state is DoctorsLoading || state is DoctorsInitial) {
           return const Center(child: CircularProgressIndicator());
         }
+
         if (state is DoctorsError) {
           return Center(child: Text(state.message));
         }
-        if (state is DoctorsLoaded ||
-            state is DoctorsDetailLoading ||
-            state is DoctorsDetailError) {
-          DoctorsOverviewModel overview;
 
-          DoctorDetailsModel? selectedDoctor;
+        DoctorsOverviewModel? overview;
+        DoctorDetailsModel? selectedDoctor;
+        var isActionLoading = false;
+        var isDetailLoading = false;
 
-          if (state is DoctorsLoaded) {
-            overview = state.overview;
-            selectedDoctor = state.selectedDoctor;
-          } else if (state is DoctorsDetailLoading) {
-            overview = state.overview;
-            selectedDoctor = state.selectedDoctor;
-          } else {
-            overview = (state as DoctorsDetailError).overview;
-            selectedDoctor = state.selectedDoctor;
-          }
-
-          return SingleChildScrollView(
-            padding: AppSpacing.pagePadding(context),
-
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-
-              children: [
-                const SizedBox(height: AppSpacing.xl),
-
-                DoctorStatsCard(statistics: overview.statistics),
-
-                const SizedBox(height: AppSpacing.xl),
-
-                DoctorListCard(
-                  doctors: overview.doctors,
-
-                  selectedDoctorId: selectedDoctor?.id,
-
-                  onDoctorSelected: (id) =>
-                      context.read<DoctorsCubit>().loadDoctorDetails(id),
-                ),
-
-                const SizedBox(height: AppSpacing.xl),
-
-                if (selectedDoctor != null)
-                  DoctorDetailCard(doctor: selectedDoctor),
-              ],
-            ),
-          );
+        if (state is DoctorsLoaded) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
+        } else if (state is DoctorsDetailLoading) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
+          isDetailLoading = true;
+        } else if (state is DoctorsDetailError) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
+        } else if (state is BulkApprovedLoading) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
+          isActionLoading = true;
+        } else if (state is BulkApprovedError) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
+        } else if (state is BulkApprovedSuccess) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
+        } else if (state is BulkRejectedLoading) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
+          isActionLoading = true;
+        } else if (state is BulkRejectedError) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
+        } else if (state is BulkRejectedSuccess) {
+          overview = state.overview;
+          selectedDoctor = state.selectedDoctor;
         }
 
-        return const SizedBox.shrink();
+        if (overview == null) return const SizedBox.shrink();
+
+        return Stack(
+          children: [
+            SingleChildScrollView(
+              padding: AppSpacing.pagePadding(context),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: AppSpacing.xl),
+                  DoctorStatsCard(statistics: overview!.statistics),
+                  const SizedBox(height: AppSpacing.xl),
+                  DoctorListCard(
+                    doctors: overview!.doctors,
+                    selectedDoctorId: selectedDoctor?.id,
+                    onDoctorSelected: (id) =>
+                        context.read<DoctorsCubit>().loadDoctorDetails(id),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  if (selectedDoctor != null)
+                    DoctorDetailCard(doctor: selectedDoctor!),
+                ],
+              ),
+            ),
+            if (isActionLoading || isDetailLoading)
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: LinearProgressIndicator(),
+              ),
+          ],
+        );
       },
     );
   }
