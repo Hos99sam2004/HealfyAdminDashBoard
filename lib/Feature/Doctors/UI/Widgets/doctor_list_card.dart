@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hossam_templete_for_apps/Core/utils/CustomWidgets/inputField.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/cubit/doctors_cubit.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/Logic/models/doctor_model.dart';
 import 'package:hossam_templete_for_apps/Feature/Doctors/UI/Screens/DoctorDetailsScreen.dart';
 import 'package:hossam_templete_for_apps/theme/app_colors.dart';
 import 'package:hossam_templete_for_apps/theme/app_spacing.dart';
 
-class DoctorListCard extends StatefulWidget {
+class DoctorListCard extends StatelessWidget {
   final List<DoctorModel> doctors;
   final String? selectedDoctorId;
   final ValueChanged<String> onDoctorSelected;
@@ -19,80 +18,67 @@ class DoctorListCard extends StatefulWidget {
     required this.onDoctorSelected,
   });
 
-  @override
-  State<DoctorListCard> createState() => _DoctorListCardState();
-}
+  bool _isActionLoading(DoctorsState state) =>
+      state is BulkApprovedLoading || state is BulkRejectedLoading;
 
-class _DoctorListCardState extends State<DoctorListCard> {
-  // دالة لإظهار dialog الرفض بشكل منفصل ونظيف
-  void _showRejectDialog(BuildContext context, String doctorId) {
-    final doctorsCubit = context.read<DoctorsCubit>();
-    final TextEditingController reasonController = TextEditingController(
-      text: "Rejected By Admin",
-    );
+  Future<void> _showRejectDialog(BuildContext context, String doctorId) async {
+    final controller = TextEditingController();
 
-    showDialog(
+    final reason = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        content: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.darkSurface,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "This doctor will be rejected. Are you sure?",
-                style: TextStyle(
-                  color: AppColors.error, // تعديل اللون إلى الأحمر للتنبيه
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: InputField(
-                  label: "Rejected Reason",
-                  icon: Icons.wrap_text_outlined,
-                  mycontroller: reasonController,
-                ),
-              ),
-            ],
+        title: const Text('Reject doctor'),
+        content: TextField(
+          controller: controller,
+          maxLines: 4,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Rejection reason',
+            hintText: 'Enter the reason for rejection',
+            border: OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
-              doctorsCubit
-                  .rejectDoctor(reasonController.text, doctorId: doctorId)
-                  .then((value) {
-                    Navigator.pop(dialogContext);
-                  });
-              // Navigator.pop(dialogContext);
+              final value = controller.text.trim();
+              if (value.isEmpty) return;
+              Navigator.pop(dialogContext, value);
             },
             child: const Text('Reject'),
           ),
         ],
       ),
     );
+
+    controller.dispose();
+    if (reason == null || !context.mounted) return;
+
+    await context.read<DoctorsCubit>().rejectDoctor(
+      reason,
+      doctorId: doctorId,
+    );
+  }
+
+  Future<void> _openDetails(BuildContext context, DoctorModel doctor) async {
+    final cubit = context.read<DoctorsCubit>();
+    await cubit.loadDoctorDetails(doctor.id);
+    if (!context.mounted) return;
+
+    final state = cubit.state;
+    if (state is DoctorsLoaded && state.selectedDoctor != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => Doctordetailsscreen(doctor: state.selectedDoctor!),
+        ),
+      );
+    }
   }
 
   @override
@@ -123,174 +109,172 @@ class _DoctorListCardState extends State<DoctorListCard> {
           ),
           const SizedBox(height: AppSpacing.xs),
           const Text(
-            'Tap a doctor to view full details.',
+            'Select a doctor to view full details.',
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.lg),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: widget.doctors.length,
-            separatorBuilder: (context, index) =>
-                const SizedBox(height: AppSpacing.sm),
-            itemBuilder: (context, index) {
-              final doctor = widget.doctors[index];
-              final isSelected = doctor.id == widget.selectedDoctorId;
+          if (doctors.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: Text(
+                  'No doctors found.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: doctors.length,
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (context, index) {
+                final doctor = doctors[index];
+                final isSelected = doctor.id == selectedDoctorId;
+                final status = doctor.status?.toLowerCase();
+                final isLoading = _isActionLoading(context.read<DoctorsCubit>().state);
 
-              return Material(
-                color: isSelected
-                    ? AppColors.primary.withOpacity(0.08)
-                    : AppColors.background,
-                borderRadius: BorderRadius.circular(18),
-                child: InkWell(
+                return Material(
+                  color: isSelected
+                      ? AppColors.primary.withOpacity(0.08)
+                      : AppColors.background,
                   borderRadius: BorderRadius.circular(18),
-                  onTap: () => widget.onDoctorSelected(doctor.id),
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 26,
-                          backgroundColor: AppColors.primary.withOpacity(0.12),
-                          backgroundImage: doctor.avatarUrl != null
-                              ? NetworkImage(doctor.avatarUrl!)
-                              : null,
-                          child: doctor.avatarUrl == null
-                              ? const Icon(
-                                  Icons.person_outline,
-                                  color: AppColors.primary,
-                                )
-                              : null,
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                doctor.fullName,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: isLoading ? null : () => onDoctorSelected(doctor.id),
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: AppSpacing.md,
+                        runSpacing: AppSpacing.sm,
+                        children: [
+                          SizedBox(
+                            width: 280,
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 26,
+                                  backgroundColor: AppColors.primary.withOpacity(0.12),
+                                  backgroundImage: doctor.avatarUrl != null
+                                      ? NetworkImage(doctor.avatarUrl!)
+                                      : null,
+                                  child: doctor.avatarUrl == null
+                                      ? const Icon(
+                                          Icons.person_outline,
+                                          color: AppColors.primary,
+                                        )
+                                      : null,
                                 ),
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                doctor.specialty ??
-                                    doctor.email ??
-                                    doctor.phone ??
-                                    'No extra details',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary,
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        doctor.fullName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      Text(
+                                        doctor.specialty ?? doctor.email ?? 'Not available',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.xs,
-                            horizontal: AppSpacing.sm,
-                          ),
-                          decoration: BoxDecoration(
-                            color: doctor.profileCompleted
-                                ? AppColors.success.withOpacity(0.12)
-                                : AppColors.secondary.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            doctor.profileCompleted ? 'Verified' : 'Pending',
-                            style: TextStyle(
-                              color: doctor.profileCompleted
-                                  ? AppColors.success
-                                  : AppColors.secondary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                              ],
                             ),
                           ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert),
-                          onSelected: (String value) async {
-                            if (value == 'details') {
-                              await context
-                                  .read<DoctorsCubit>()
-                                  .loadDoctorDetails(doctor.id);
-
-                              if (!context.mounted) return;
-
-                              final state = context.read<DoctorsCubit>().state;
-                              if (state is DoctorsLoaded &&
-                                  state.selectedDoctor != null) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => Doctordetailsscreen(
-                                      doctor: state.selectedDoctor!,
-                                    ),
-                                  ),
-                                );
-                              }
-                            } else if (value == 'Approved') {
-                              await context.read<DoctorsCubit>().approveDoctor(
-                                doctorId: doctor.id,
-                              );
-                            } else if (value == 'Rejected') {
-                              _showRejectDialog(context, doctor.id);
-                            }
-                          },
-                          itemBuilder: (BuildContext context) => [
-                            const PopupMenuItem<String>(
-                              value: 'details',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.visibility, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('Details'),
-                                ],
-                              ),
+                          _StatusChip(status: status),
+                          if (status == 'pending')
+                            Wrap(
+                              spacing: AppSpacing.xs,
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => context.read<DoctorsCubit>().approveDoctor(
+                                            doctorId: doctor.id,
+                                          ),
+                                  icon: const Icon(Icons.check, size: 18),
+                                  label: const Text('Approve'),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => _showRejectDialog(context, doctor.id),
+                                  icon: const Icon(Icons.close, size: 18),
+                                  label: const Text('Reject'),
+                                ),
+                              ],
                             ),
-                            const PopupMenuItem<String>(
-                              value: 'Approved',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.check, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('Approved'),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuDivider(),
-                            const PopupMenuItem<String>(
-                              value: 'Rejected',
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.close,
-                                    color: Colors.red,
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Rejected',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                          IconButton(
+                            tooltip: 'View details',
+                            onPressed: isLoading ? null : () => _openDetails(context, doctor),
+                            icon: const Icon(Icons.visibility_outlined),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
-          ),
+                );
+              },
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String? status;
+
+  const _StatusChip({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = status ?? 'pending';
+    final color = switch (normalized) {
+      'approved' => AppColors.success,
+      'rejected' => AppColors.error,
+      _ => AppColors.secondary,
+    };
+    final label = switch (normalized) {
+      'approved' => 'Approved',
+      'rejected' => 'Rejected',
+      _ => 'Pending',
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
